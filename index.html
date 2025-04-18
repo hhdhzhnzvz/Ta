@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Теневой Арбитр</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #111;
+            color: #ccc;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #8B0000;
+        }
+        #game-container {
+            background-color: #222;
+            padding: 20px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #case-text {
+            background-color: #333;
+            padding: 15px;
+            border-left: 3px solid #8B0000;
+            margin-bottom: 20px;
+        }
+        .decision-btn {
+            background-color: #333;
+            color: #ccc;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .decision-btn:hover {
+            background-color: #444;
+            border-color: #8B0000;
+        }
+        #stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #252525;
+        }
+        .stat {
+            text-align: center;
+            padding: 5px;
+            background-color: #1a1a1a;
+        }
+        #log {
+            height: 150px;
+            overflow-y: scroll;
+            background-color: #1a1a1a;
+            padding: 10px;
+            margin-top: 20px;
+            border: 1px solid #333;
+            font-size: 0.9em;
+        }
+        #factions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .faction {
+            width: 30%;
+            text-align: center;
+            padding: 5px;
+            background-color: #252525;
+        }
+        .faction-bar {
+            height: 5px;
+            background-color: #333;
+            margin-top: 5px;
+        }
+        .faction-fill {
+            height: 100%;
+            background-color: #8B0000;
+            width: 50%;
+        }
+        #rank {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #8B0000;
+        }
+        .hidden {
+            display: none;
+        }
+        #start-screen {
+            text-align: center;
+            padding: 50px 0;
+        }
+        #start-btn {
+            background-color: #8B0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 30px;
+        }
+        #end-screen {
+            text-align: center;
+            padding: 50px 0;
+        }
+        #restart-btn {
+            background-color: #8B0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 30px;
+        }
+        #money-display {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #252525;
+            padding: 5px 10px;
+            border: 1px solid #444;
+            border-radius: 3px;
+        }
+        #relations {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #252525;
+        }
+        .relation {
+            margin: 5px 0;
+        }
+        .relation-name {
+            display: inline-block;
+            width: 150px;
+        }
+        .relation-value {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+        }
+        .relation-bar {
+            display: inline-block;
+            width: 200px;
+            height: 10px;
+            background-color: #333;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        .relation-fill {
+            height: 100%;
+            background-color: #8B0000;
+        }
+        #event-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            padding: 20px;
+            border: 2px solid #8B0000;
+            z-index: 100;
+            width: 80%;
+            max-width: 600px;
+        }
+        #event-options {
+            margin-top: 15px;
+        }
+        .event-option {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #444;
+            cursor: pointer;
+        }
+        .event-option:hover {
+            background-color: #555;
+        }
+        #blackmail-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            padding: 20px;
+            border: 2px solid #8B0000;
+            z-index: 100;
+            width: 80%;
+            max-width: 600px;
+        }
+        #blackmail-options {
+            margin-top: 15px;
+        }
+        .blackmail-option {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #444;
+            cursor: pointer;
+        }
+        .blackmail-option:hover {
+            background-color: #555;
+        }
+        .case-severity {
+            margin-top: 10px;
+            font-style: italic;
+            color: #8B0000;
+        }
+        .case-consequences {
+            margin-top: 10px;
+            padding: 5px;
+            background-color: #252525;
+            border-left: 2px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen">
+        <h1>ТЕНЕВОЙ АРБИТР</h1>
+        <h3>Министерство Урегулирования Внутренних Противоречий</h3>
+        <p>Вы - высокопоставленный теневой сотрудник МУВП. Ваша задача - рассматривать дела о проступках должностных лиц и принимать решения, которые повлияют на их судьбу, карьеру, а иногда и жизнь.</p>
+        <p>Каждое ваше решение будет влиять на репутацию Министерства, уровень коррупции в системе и ваше личное положение.</p>
+        <button id="start-btn">НАЧАТЬ СЛУЖБУ</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div id="money-display">Капитал: $<span id="money-amount">0</span></div>
+        <div id="rank">Старший Инспектор 3-го Класса</div>
+        
+        <div id="stats">
+            <div class="stat">
+                <div>Репутация МУВП</div>
+                <div id="reputation">50</div>
+            </div>
+            <div class="stat">
+                <div>Уровень коррупции</div>
+                <div id="corruption">50</div>
+            </div>
+            <div class="stat">
+                <div>Ваше влияние</div>
+                <div id="influence">50</div>
+            </div>
+            <div class="stat">
+                <div>Стабильность режима</div>
+                <div id="stability">50</div>
+            </div>
+        </div>
+
+        <div id="case-text">
+            <h3>Дело №<span id="case-number">1</span> <span id="case-severity"></span></h3>
+            <div id="case-description">Загружаем дело...</div>
+            <div id="case-consequences" class="hidden"></div>
+        </div>
+
+        <div id="decisions">
+            <h3>Ваше решение:</h3>
+            <div id="decision-buttons"></div>
+        </div>
+
+        <div id="factions">
+            <div class="faction">
+                <div>Армия</div>
+                <div class="faction-bar"><div class="faction-fill" id="army-bar"></div></div>
+                <div id="army-value">50</div>
+            </div>
+            <div class="faction">
+                <div>Спецслужбы</div>
+                <div class="faction-bar"><div class="faction-fill" id="security-bar"></div></div>
+                <div id="security-value">50</div>
+            </div>
+            <div class="faction">
+                <div>Партия</div>
+                <div class="faction-bar"><div class="faction-fill" id="party-bar"></div></div>
+                <div id="party-value">50</div>
+            </div>
+        </div>
+
+        <div id="relations">
+            <h3>Личные отношения:</h3>
+            <div id="relations-list"></div>
+        </div>
+
+        <div id="log">
+            <p>Добро пожаловать в Министерство Урегулирования Внутренних Противоречий. Сегодня <span id="game-date">01.01.1984</span>.</p>
+        </div>
+    </div>
+
+    <div id="end-screen" class="hidden">
+        <h1>ВАША СЛУЖБА ЗАВЕРШЕНА</h1>
+        <div id="end-message"></div>
+        <button id="restart-btn">НАЧАТЬ ЗАНОВО</button>
+    </div>
+
+    <div id="event-popup" class="hidden">
+        <h3 id="event-title">Событие</h3>
+        <p id="event-description">Описание события</p>
+        <div id="event-options"></div>
+    </div>
+
+    <div id="blackmail-popup" class="hidden">
+        <h3>Угроза вашему положению</h3>
+        <p id="blackmail-description">Описание угрозы</p>
+        <div id="blackmail-options"></div>
+    </div>
+
+    <script>
+        // Игровые переменные
+        let gameState = {
+            reputation: 50,
+            corruption: 50,
+            influence: 50,
+            stability: 50,
+            army: 50,
+            security: 50,
+            party: 50,
+            money: 50000,
+            day: 1,
+            year: 1984,
+            casesSolved: 0,
+            rank: 3,
+            rankName: "Старший Инспектор 3-го Класса",
+            logEntries: [],
+            gameOver: false,
+            relations: {
+                "Министр обороны": 50,
+                "Глава КГБ": 50,
+                "Первый секретарь": 50,
+                "Генеральный прокурор": 50,
+                "Председатель Верховного Совета": 50,
+                "Главный редактор 'Правды'": 50,
+                "Начальник Генштаба": 50,
+                "Министр иностранных дел": 50,
+                "Министр финансов": 50,
+                "Руководитель Администрации": 50
+            },
+            blackmailChance: 0,
+            eventChance: 0.2
+        };
+
+        // Базы данных для генерации дел
+        const positions = [
+            "Глава регионального МВД", "Министр финансов", "Судья Верховного суда", "Генерал армии", 
+            "Директор оборонного завода", "Член Политбюро", "Мэр столицы", "Начальник спецтюрьмы",
+            "Прокурор области", "Посол в ООН", "Полковник КГБ", "Руководитель госпредприятия",
+            "Начальник таможенной службы", "Ректор государственного университета", "Главный редактор газеты 'Правда'",
+            "Директор центрального телевидения", "Глава муниципалитета", "Заместитель министра внутренних дел",
+            "Секретарь обкома партии", "Член Центризбиркома", "Руководитель стратегической стройки", "Глава профсоюза",
+            "Начальник управления КГБ", "Председатель государственного банка", "Комендант особой зоны",
+            "Начальник железной дороги", "Директор научного института", "Командующий военным округом",
+            "Руководитель торговой миссии", "Главный врач центральной больницы"
+        ];
+
+        const crimes = [
+            {
+                description: "скрыл убийство, совершенное его племянником, подделав следственные документы",
+                severity: 8,
+                consequences: "Родственники жертвы требуют справедливости. Международные правозащитные организации начали расследование."
+            },
+            {
+                description: "перевел $2 млн государственных средств на личный офшорный счет в Швейцарии",
+                severity: 9,
+                consequences: "Операция была зафиксирована зарубежными банками. Возможна утечка информации."
+            },
+            {
+                description: "за взятку в $500,000 оправдал опасного преступника, связанного с мафией",
+                severity: 7,
+                consequences: "Оправданный преступник уже совершил новое преступление. Общественность возмущена."
+            },
+            {
+                description: "продал вражескому государству секретные чертежи новейшего истребителя",
+                severity: 10,
+                consequences: "Иностранные СМИ уже обсуждают полученные технологии. Военные требуют жестких мер."
+            },
+            {
+                description: "устроил пьяный дебош на официальном приеме с иностранными дипломатами",
+                severity: 6,
+                consequences: "Инцидент был заснят на видео. Иностранные гости выразили протест."
+            },
+            {
+                description: "публично усомнился в решениях Верховного Лидера во время партийного собрания",
+                severity: 9,
+                consequences: "Запись выступления распространяется среди партийной элиты. Возможен раскол."
+            },
+            {
+                description: "присвоил деньги, выделенные на ликвидацию последствий наводнения, оставив тысячи без помощи",
+                severity: 8,
+                consequences: "В пострадавшем регионе начались голодные бунты. Смертность резко возросла."
+            },
+            {
+                description: "санкционировал пытки политических заключенных, что привело к нескольким смертям",
+                severity: 7,
+                consequences: "Заключенные передали информацию на волю. Правозащитники готовят доклад."
+            },
+            {
+                description: "закрыл уголовное дело на влиятельного бизнесмена в обмен на квартиру в центре Москвы",
+                severity: 6,
+                consequences: "Бизнесмен, чувствуя безнаказанность, расширяет незаконную деятельность."
+            },
+            {
+                description: "устроил драку с иностранным дипломатом в посольстве, спровоцировав международный скандал",
+                severity: 7,
+                consequences: "Посольство требует официальных извинений. Готовится нота протеста."
+            },
+            {
+                description: "продавал допуски в правительственные здания криминальным группировкам за $10,000 каждый",
+                severity: 8,
+                consequences: "В здании Совмина был задержан вооруженный преступник. Служба безопасности в шоке."
+            },
+            {
+                description: "организовал незаконную торговлю оружием с ближневосточными странами через подставные фирмы",
+                severity: 9,
+                consequences: "Оружие было использовано в теракте. Местные СМИ вышли на след поставок."
+            },
+            {
+                description: "лично подделал результаты выборов в своем округе, завысив явку на 35%",
+                severity: 7,
+                consequences: "Оппозиция собрала доказательства фальсификаций. Готовится акция протеста."
+            },
+            {
+                description: "устроил оргию с проститутками в правительственной резиденции, используя казенное имущество",
+                severity: 5,
+                consequences: "Фотографии попали в руки журналистов. Репутации правительства нанесен урон."
+            },
+            {
+                description: "закрывал глаза на наркоторговлю в подведомственном районе за ежемесячные выплаты в $20,000",
+                severity: 8,
+                consequences: "Уровень наркомании среди молодежи вырос втрое. Родители требуют действий."
+            },
+            {
+                description: "передавал гостайну иностранным журналистам за крупные денежные вознаграждения",
+                severity: 10,
+                consequences: "Переданная информация появилась в зарубежной прессе. Контрразведка в ярости."
+            },
+            {
+                description: "использовал бюджетные средства для строительства личной виллы на Черноморском побережье",
+                severity: 7,
+                consequences: "Строители рассказали о проекте знакомым. Информация всплыла в соцсетях."
+            },
+            {
+                description: "проигнорировал нарушения техники безопасности на заводе, что привело к взрыву с десятками жертв",
+                severity: 9,
+                consequences: "Родственники погибших собирают митинг. Завод остановлен, убытки исчисляются миллионами."
+            },
+            {
+                description: "организовал незаконную слежку за политическими оппонентами, используя ресурсы спецслужб",
+                severity: 8,
+                consequences: "Один из объектов слежки обнаружил наблюдение. Готовит разоблачительное выступление."
+            },
+            {
+                description: "фальсифицировал результаты научных исследований за государственный счет для получения премии",
+                severity: 6,
+                consequences: "Коллеги-ученые обнаружили подлог. Научное сообщество требует расследования."
+            },
+            {
+                description: "продавал государственные должности за суммы от $50,000 до $200,000 в зависимости от важности поста",
+                severity: 7,
+                consequences: "Некоторые назначенные чиновники оказались совершенно некомпетентны, вызывая хаос в управлении."
+            },
+            {
+                description: "организовал незаконный бизнес по производству алкоголя на подведомственной территории",
+                severity: 6,
+                consequences: "Низкокачественный продукт привел к массовым отравлениям. Медики бьют тревогу."
+            },
+            {
+                description: "уничтожил компрометирующие документы, касающиеся коррупционных схем высшего руководства",
+                severity: 9,
+                consequences: "Копии некоторых документов сохранились у третьих лиц. Возможен шантаж."
+            },
+            {
+                description: "закрыл глаза на контрабанду исторических ценностей за границу за долю в прибыли",
+                severity: 8,
+                consequences: "Уникальные экспонаты появились на зарубежных аукционах. Культурное сообщество в шоке."
+            },
+            {
+                description: "использовал служебное положение для сведения личных счетов, посадив невиновного человека",
+                severity: 7,
+                consequences: "Жертва распространяет информацию о произволе. Набирает поддержку в соцсетях."
+            },
+            {
+                description: "присвоил гуманитарную помощь, предназначенную для голодающих регионов",
+                severity: 8,
+                consequences: "В регионах начался голод. Местные власти обращаются за международной помощью."
+            },
+            {
+                description: "за взятку освободил из тюрьмы осужденного за педофилию, подделав медицинские документы",
+                severity: 9,
+                consequences: "Освобожденный преступник снова совершил преступление. Общественность требует ответов."
+            },
+            {
+                description: "организовал схему отмывания денег через подставные благотворительные фонды",
+                severity: 7,
+                consequences: "Финансовый мониторинг обнаружил подозрительные операции. Банки начали расследование."
+            },
+            {
+                description: "продавал информацию о диссидентах иностранным разведкам",
+                severity: 10,
+                consequences: "Несколько активистов были арестованы за рубежом. След ведет к утечке из наших органов."
+            },
+            {
+                description: "использовал военных для строительства своей дачи в заповедной зоне",
+                severity: 6,
+                consequences: "Экологи обнаружили нарушения. Объект попал на спутниковые снимки зарубежных СМИ."
+            },
+            {
+                description: "закрыл уголовное дело на наркокартель после получения доли в их бизнесе",
+                severity: 9,
+                consequences: "Картель резко увеличил обороты. Соседние регионы завалены наркотиками."
+            },
+            {
+                description: "организовал незаконную добычу полезных ископаемых на охраняемой территории",
+                severity: 7,
+                consequences: "Экологическая катастрофа уничтожила уникальную экосистему. Ученые бьют тревогу."
+            },
+            {
+                description: "подделал диплом о высшем образовании для получения высокой должности",
+                severity: 5,
+                consequences: "Бывшие однокурсники раскрыли обман. Вопрос обсуждается в профессиональных кругах."
+            },
+            {
+                description: "использовал бюджетные средства для финансирования личного бизнеса родственников",
+                severity: 7,
+                consequences: "Конкуренты бизнеса собрали доказательства и готовят иск."
+            },
+            {
+                description: "продавал места в престижных вузах детям элиты, игнорируя результаты экзаменов",
+                severity: 6,
+                consequences: "Талантливые абитуриенты остались без мест. Родители собирают подписи под петицией."
+            },
+            {
+                description: "организовал схему незаконного усыновления детей-сирот за границу за крупные суммы",
+                severity: 8,
+                consequences: "Некоторые усыновленные дети подверглись насилию. Международный скандал неизбежен."
+            },
+            {
+                description: "закрывал глаза на эксплуатацию детского труда на подконтрольных предприятиях",
+                severity: 9,
+                consequences: "Дети получили серьезные травмы. Фотографии рабочих условий попали в прессу."
+            },
+            {
+                description: "принимал решения в пользу иностранных компаний в обмен на будущее трудоустройство за границей",
+                severity: 8,
+                consequences: "Национальные предприятия понесли убытки. Сотни рабочих остались без зарплаты."
+            },
+            {
+                description: "использовал служебный самолет для личных поездок семьи на курорты",
+                severity: 5,
+                consequences: "Расходы на топливо превысили годовой бюджет. Сотрудники возмущены привилегиями."
+            },
+            {
+                description: "организовал незаконные азартные игры в правительственном здании с участием высокопоставленных лиц",
+                severity: 6,
+                consequences: "Один из проигравших покончил с собой, оставив разоблачительную записку."
+            },
+            {
+                description: "продавал помилования осужденным за особо тяжкие преступления",
+                severity: 9,
+                consequences: "Несколько помилованных преступников совершили новые преступления. Родственники жертв в ярости."
+            },
+            {
+                description: "фальсифицировал статистику по COVID-19, скрыв тысячи смертей",
+                severity: 8,
+                consequences: "Система здравоохранения не справляется. Врачи начали публиковать реальные цифры."
+            },
+            {
+                description: "присвоил деньги, выделенные на вакцинацию населения",
+                severity: 9,
+                consequences: "Вспышка заболевания в нескольких регионах. Больницы переполнены."
+            },
+            {
+                description: "организовал схему по продаже дипломов о вакцинации без фактической прививки",
+                severity: 7,
+                consequences: "Новые штаммы вируса распространяются с угрожающей скоростью. Врачи в отчаянии."
+            },
+            {
+                description: "использовал военных для личной охраны во время отпуска на курорте",
+                severity: 5,
+                consequences: "Солдаты пожаловались на унизительное обращение. Инцидент стал известен командованию."
+            },
+            {
+                description: "продавал военную технику на запчасти, которая затем оказалась у вражеских государств",
+                severity: 10,
+                consequences: "Техника была использована против наших миротворцев. Генштаб требует жесткого расследования."
+            },
+            {
+                description: "организовал незаконную вырубку леса в заповедной зоне для продажи за границу",
+                severity: 7,
+                consequences: "Экологический ущерб оценивается в миллиарды. Уникальные виды животных под угрозой."
+            },
+            {
+                description: "закрывал глаза на незаконные эксперименты над людьми в подведомственном научном центре",
+                severity: 10,
+                consequences: "Несколько жертв экспериментов сбежали и готовят разоблачения. Материалы шокируют."
+            },
+            {
+                description: "использовал политзаключенных как бесплатную рабочую силу на своих частных предприятиях",
+                severity: 9,
+                consequences: "Один из заключенных сумел передать информацию правозащитникам. Готовится международный скандал."
+            },
+            {
+                description: "продавал информацию о расположении военных частей иностранным разведкам",
+                severity: 10,
+                consequences: "Враг использовал данные для точечных ударов. Есть погибшие среди военных."
+            }
+        ];
+
+        const contexts = [
+            "Его покровитель — заместитель министра обороны. Любые действия против него могут быть восприняты как вызов всей военной элите.",
+            "Это может быть частью более крупного заговора против действующей власти. Нейтрализация нарушителя может сорвать планы заговорщиков.",
+            "Нарушение уже привело к серьезным последствиям, которые невозможно скрыть. Требуются срочные меры по урегулированию ситуации.",
+            "Дело может получить огласку в международных СМИ. Иностранные правительства уже выразили озабоченность ситуацией.",
+            "Нарушитель имеет связи в высших эшелонах власти. Его устранение может вызвать цепную реакцию во всей системе.",
+            "Этот случай может быть верхушкой айсберга. Расследование может привести к развалу крупной коррупционной сети.",
+            "Нарушитель — родственник важной персоны. Любые санкции против него затронут интересы влиятельного семейства.",
+            "Дело может подорвать доверие к правительству в преддверии важных выборов. Требуется аккуратный подход.",
+            "Нарушитель знает слишком много о теневых схемах высшего руководства. Его показания могут быть опасны.",
+            "Это может быть провокацией против МУВП. Кто-то хочет проверить вашу лояльность существующей системе.",
+            "Нарушитель имеет компромат на высокопоставленных лиц. Его нейтрализация может привести к утечке информации.",
+            "Дело может спровоцировать волнения среди населения. Уже появились лидеры, готовые возглавить протесты.",
+            "Нарушитель — ключевая фигура в важном государственном проекте. Его устранение поставит под угрозу национальную безопасность.",
+            "Это может быть проверкой вашей лояльности со стороны спецслужб. Они наблюдают за вашими действиями.",
+            "Нарушитель — бывший сотрудник спецслужб. Он знает все методы работы и может быть опасным противником.",
+            "Дело связано с иностранными интересами. Зарубежные игроки внимательно следят за развитием ситуации.",
+            "Нарушитель — потенциальный информатор. При правильном подходе он может предоставить ценную информацию.",
+            "Это может быть частью борьбы кланов внутри власти. Ваше решение повлияет на расстановку сил.",
+            "Нарушитель — единственный свидетель более крупного преступления. Его показания могут привести к громкому разоблачению.",
+            "Дело может повлиять на экономическую стабильность. Финансовые рынки уже реагируют на слухи."
+        ];
+
+        const connections = [
+            {text: "родственник члена Политбюро", relation: "Первый секретарь", effect: -15},
+            {text: "бывший сослуживец Верховного Лидера", relation: "Председатель Верховного Совета", effect: -10},
+            {text: "куратор от спецслужб", relation: "Глава КГБ", effect: -12},
+            {text: "ставленник Армейского командования", relation: "Министр обороны", effect: -15},
+            {text: "протеже Партийного секретаря", relation: "Первый секретарь", effect: -10},
+            {text: "информатор Контрразведки", relation: "Глава КГБ", effect: 5},
+            {text: "финансист Правящей партии", relation: "Министр финансов", effect: -10},
+            {text: "доверенное лицо Министра обороны", relation: "Министр обороны", effect: -15},
+            {text: "сват Генерального прокурора", relation: "Генеральный прокурор", effect: -12},
+            {text: "крестник Председателя Верховного Суда", relation: "Председатель Верховного Совета", effect: -10}
+        ];
+
+        // Варианты решений
+        const decisions = [
+            {
+                text: "Вынести строгий выговор",
+                reputation: 1,
+                corruption: 2,
+                influence: 0,
+                stability: 0,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушителю вынесен строгий выговор с занесением в личное дело.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = 5; // Смягчение за лояльность
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Понизить в должности",
+                reputation: 2,
+                corruption: -1,
+                influence: 1,
+                stability: 1,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель понижен в должности и переведен на менее значимый пост.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 0.5;
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Уволить без последствий",
+                reputation: 0,
+                corruption: 3,
+                influence: 0,
+                stability: 0,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель уволен с формулировкой 'по собственному желанию'.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 0.7;
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Конфисковать имущество",
+                reputation: 3,
+                corruption: -2,
+                influence: 2,
+                stability: 1,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: function(severity) { return severity * 2000; },
+                relations: {},
+                message: "Имущество нарушителя конфисковано в пользу государства. Часть средств осела в вашем кармане.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 0.8;
+                        effects["Министр финансов"] = -5; // Министр финансов не любит конфискации
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Отправить на исправительные работы",
+                reputation: 4,
+                corruption: -3,
+                influence: 1,
+                stability: 2,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель отправлен на исправительные работы сроком на 5 лет.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect;
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Арестовать и предать суду",
+                reputation: 5,
+                corruption: -5,
+                influence: 3,
+                stability: 3,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель арестован и предан публичному суду.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 1.2;
+                    }
+                    effects["Генеральный прокурор"] = 5; // Прокурор любит показательные процессы
+                    return effects;
+                }
+            },
+            {
+                text: "Отправить в ссылку",
+                reputation: 4,
+                corruption: -4,
+                influence: 2,
+                stability: 2,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель отправлен в административную ссылку в отдаленный регион.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect;
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Тайно ликвидировать",
+                reputation: 6,
+                corruption: -6,
+                influence: 5,
+                stability: 4,
+                army: -5,
+                security: -5,
+                party: -5,
+                money: 0,
+                relations: {},
+                message: "Нарушитель ликвидирован, инсценирована смерть в результате несчастного случая.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 1.5;
+                    }
+                    effects["Глава КГБ"] = -10; // КГБ не любит самодеятельность
+                    return effects;
+                }
+            },
+            {
+                text: "Использовать как информатора",
+                reputation: 2,
+                corruption: 1,
+                influence: 4,
+                stability: 0,
+                army: 0,
+                security: 5,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Нарушитель завербован как информатор и будет сообщать о других нарушениях.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = -5; // Покровитель недоволен вербовкой
+                    }
+                    effects["Глава КГБ"] = 10; // КГБ любит информаторов
+                    return effects;
+                }
+            },
+            {
+                text: "Закрыть дело за взятку",
+                reputation: -5,
+                corruption: 10,
+                influence: 2,
+                stability: -2,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: function(severity) { return severity * 5000; },
+                relations: {},
+                message: "Дело закрыто за значительную взятку, переведенную на ваш личный счет.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = -5; // Покровитель может быть недоволен шантажом
+                    }
+                    effects["Генеральный прокурор"] = -10; // Прокурор против коррупции
+                    effects["Министр финансов"] = 5; // Министр финансов понимает такие дела
+                    return effects;
+                }
+            },
+            {
+                text: "Передать вышестоящему начальству",
+                reputation: 0,
+                corruption: 0,
+                influence: -1,
+                stability: 0,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Дело передано на рассмотрение начальству нарушителя.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = -3; // Покровитель недоволен перекладыванием ответственности
+                    }
+                    return effects;
+                }
+            },
+            {
+                text: "Обнародовать преступление",
+                reputation: 7,
+                corruption: -7,
+                influence: 4,
+                stability: 5,
+                army: 0,
+                security: 0,
+                party: 0,
+                money: 0,
+                relations: {},
+                message: "Преступление обнародовано, устроена показательная расправа для устрашения других.",
+                relationEffects: function(caseConnections) {
+                    const effects = {};
+                    if (caseConnections) {
+                        effects[caseConnections.relation] = caseConnections.effect * 1.5;
+                    }
+                    effects["Главный редактор 'Правды'"] = 5; // Журналисты любят скандалы
+                    return effects;
+                }
+            }
+        ];
+
+        // Ранги игрока
+        const ranks = [
+            "Инспектор 5-го Класса",
+            "Инспектор 4-го Класса",
+            "Старший Инспектор 3-го Класса",
+            "Главный Инспектор 2-го Класса",
+            "Ведущий Арбитр 1-го Класса",
+            "Заместитель Министра УВП",
+            "Министр Урегулирования Внутренних Противоречий"
+        ];
+
+        // События
+        const events = [
+            {
+                title: "Финансовая проверка",
+                description: "Комиссия из Министерства финансов начала неожиданную проверку деятельности МУВП. Ваши решения и финансовые отчеты под пристальным вниманием. Любые нарушения могут привести к серьезным последствиям.",
+                options: [
+                    {
+                        text: "Подделать отчеты (Требуется $30,000)",
+                        cost: 30000,
+                        effect: {corruption: 5, reputation: -2, influence: 1},
+                        relationEffects: {"Министр финансов": -10, "Генеральный прокурор": -5},
+                        message: "Вы подкупили членов комиссии, и проверка прошла без замечаний. Однако министр финансов заподозрил неладное."
+                    },
+                    {
+                        text: "Честно пройти проверку",
+                        cost: 0,
+                        effect: {corruption: -5, reputation: 3, influence: -1},
+                        relationEffects: {"Министр финансов": 5, "Генеральный прокурор": 3},
+                        message: "Проверка выявила некоторые мелкие нарушения, но в целом вы прошли ее успешно. Ваша репутация честного чиновника укрепилась."
+                    },
+                    {
+                        text: "Надавить на комиссию через связи",
+                        cost: 0,
+                        effect: {influence: -3, army: -2, security: -2, party: -2},
+                        relationEffects: {"Министр финансов": -5, "Глава КГБ": 3},
+                        message: "Вы использовали свои связи в спецслужбах, чтобы замять проверку, но это испортило ваши отношения с другими фракциями."
+                    }
+                ]
+            },
+            {
+                title: "Международный скандал",
+                description: "Ваше последнее решение по делу высокопоставленного чиновника получило огласку в западных СМИ. Иностранные правительства требуют объяснений и грозят санкциями. Внутри страны нарастает волна критики.",
+                options: [
+                    {
+                        text: "Отрицать все обвинения",
+                        cost: 0,
+                        effect: {stability: -3, reputation: -2},
+                        relationEffects: {"Министр иностранных дел": -5, "Главный редактор 'Правды'": -3},
+                        message: "Вы публично отвергли все обвинения, назвав их провокацией. Однако доверие к режиму немного пошатнулось на международной арене."
+                    },
+                    {
+                        text: "Подкупить иностранных журналистов (Требуется $50,000)",
+                        cost: 50000,
+                        effect: {corruption: 3, stability: 1},
+                        relationEffects: {"Министр иностранных дел": 3, "Главный редактор 'Правды'": -5},
+                        message: "Журналисты ведущих западных изданий получили крупные суммы и изменили тон публикаций. Однако местные СМИ возмущены таким подходом."
+                    },
+                    {
+                        text: "Найти козла отпущения",
+                        cost: 0,
+                        effect: {reputation: -1, influence: 2},
+                        relationEffects: {"Генеральный прокурор": -3, "Глава КГБ": 5},
+                        message: "Вы обвинили подчиненного в превышении полномочий и уволили его. Спецслужбы довольны вашей решительностью."
+                    }
+                ]
+            },
+            {
+                title: "Болезнь",
+                description: "После напряженного периода работы вы серьезно заболели. Состояние требует срочного лечения, но выбор клиники может повлиять на вашу репутацию и карьеру.",
+                options: [
+                    {
+                        text: "Лечиться в обычной больнице",
+                        cost: 0,
+                        effect: {influence: -1},
+                        relationEffects: {"Руководитель Администрации": -2},
+                        message: "Вы провели неделю в обычной больнице. Ваше здоровье восстановлено, но работа стояла. Начальство отметило ваше отсутствие."
+                    },
+                    {
+                        text: "Лечиться в элитной клинике (Требуется $20,000)",
+                        cost: 20000,
+                        effect: {},
+                        relationEffects: {"Руководитель Администрации": 2},
+                        message: "Вы быстро восстановили здоровье в лучшей клинике страны. Коллеги отметили вашу благоразумность."
+                    },
+                    {
+                        text: "Игнорировать болезнь",
+                        cost: 0,
+                        effect: {influence: -2, stability: -1},
+                        relationEffects: {"Руководитель Администрации": -5},
+                        message: "Вы продолжали работать, но болезнь затянулась, что сказалось на эффективности. Руководство недовольно срывами сроков."
+                    }
+                ]
+            },
+            {
+                title: "Семейные проблемы",
+                description: "Ваш родственник арестован за участие в антиправительственной деятельности. Дело получило огласку, и ваша лояльность системе поставлена под сомнение. Требуется срочная реакция.",
+                options: [
+                    {
+                        text: "Отрицать родство",
+                        cost: 0,
+                        effect: {stability: 2, reputation: -1},
+                        relationEffects: {"Генеральный прокурор": -10, "Первый секретарь": 5},
+                        message: "Вы публично отреклись от родственника, что укрепило вашу репутацию лояльности, но испортило отношения с прокурором, знающим правду."
+                    },
+                    {
+                        text: "Подкупить следователя (Требуется $40,000)",
+                        cost: 40000,
+                        effect: {corruption: 5, stability: -1},
+                        relationEffects: {"Генеральный прокурор": 5, "Первый секретарь": -3},
+                        message: "Дело закрыли за недостатком доказательств. Прокурор получил свою долю и доволен, но партийное руководство заподозрило неладное."
+                    },
+                    {
+                        text: "Использовать служебное положение",
+                        cost: 0,
+                        effect: {influence: -3, corruption: 3},
+                        relationEffects: {"Глава КГБ": -5, "Первый секретарь": -5},
+                        message: "Вы добились освобождения родственника, используя служебные рычаги. Это вызвало вопросы у спецслужб и партийного руководства."
+                    }
+                ]
+            },
+            {
+                title: "Утечка информации",
+                description: "Конфиденциальные документы МУВП, включая ваши личные заметки, попали в руки независимых журналистов. Публикация может нанести урон репутации министерства и вашей карьере.",
+                options: [
+                    {
+                        text: "Запугать журналистов",
+                        cost: 0,
+                        effect: {reputation: -2, stability: 1},
+                        relationEffects: {"Главный редактор 'Правды'": -10, "Глава КГБ": 3},
+                        message: "Журналисты отказались от официальной публикации, но распространили информацию неофициально. Спецслужбы одобрили вашу жесткость."
+                    },
+                    {
+                        text: "Подкупить редактора (Требуется $35,000)",
+                        cost: 35000,
+                        effect: {corruption: 3, stability: 2},
+                        relationEffects: {"Главный редактор 'Правды'": 5, "Генеральный прокурор": -3},
+                        message: "Публикация была остановлена, а документы возвращены. Однако прокурор недоволен использованием коррупционных методов."
+                    },
+                    {
+                        text: "Обвинить иностранных агентов",
+                        cost: 0,
+                        effect: {stability: -1, security: 3},
+                        relationEffects: {"Министр иностранных дел": -5, "Глава КГБ": 5},
+                        message: "Вы раздули шпионский скандал, отвлекая внимание от реальных проблем. Спецслужбы довольны, но МИД не оценил осложнения в дипломатии."
+                    }
+                ]
+            },
+            {
+                title: "Партийная чистка",
+                description: "Первый секретарь инициировал чистку рядов партии от коррупционеров. Ваше имя оказалось в предварительном списке из-за нескольких спорных решений. Нужно срочно реагировать.",
+                options: [
+                    {
+                        text: "Признать мелкие нарушения (Требуется $25,000)",
+                        cost: 25000,
+                        effect: {reputation: -1, corruption: -3},
+                        relationEffects: {"Первый секретарь": 5, "Министр финансов": -3},
+                        message: "Вы признали незначительные нарушения и внесли 'добровольное пожертвование' в партийную кассу. Первый секретарь удовлетворился этим, но министр финансов заподозрил неискренность."
+                    },
+                    {
+                        text: "Найти компромат на конкурентов",
+                        cost: 0,
+                        effect: {influence: 2, corruption: 2},
+                        relationEffects: {"Первый секретарь": 3, "Глава КГБ": 5},
+                        message: "Вы предоставили компромат на других чиновников, переключив внимание на них. Спецслужбы оценили вашу осведомленность."
+                    },
+                    {
+                        text: "Обратиться за поддержкой к военным",
+                        cost: 0,
+                        effect: {army: 5, party: -5},
+                        relationEffects: {"Министр обороны": 5, "Первый секретарь": -5},
+                        message: "Вы заручились поддержкой военных, что охладило пыл партийных чиновников. Однако это испортило ваши отношения с партийным руководством."
+                    }
+                ]
+            },
+            {
+                title: "Экономический кризис",
+                description: "В стране начался экономический кризис. Бюджет МУВП сокращен на 30%. Нужно решать, как оптимизировать расходы без потери эффективности.",
+                options: [
+                    {
+                        text: "Уволить часть сотрудников",
+                        cost: 0,
+                        effect: {stability: -2, reputation: -1},
+                        relationEffects: {"Руководитель Администрации": -5},
+                        message: "Вы уволили 20% персонала, что снизило операционные возможности министерства и вызвало недовольство среди оставшихся сотрудников."
+                    },
+                    {
+                        text: "Перевести сотрудников на сокращенный оклад (Требуется $15,000)",
+                        cost: 15000,
+                        effect: {stability: -1},
+                        relationEffects: {"Руководитель Администрации": -2, "Министр финансов": 3},
+                        message: "Вы компенсировали часть зарплат из личных средств, смягчив удар по персоналу. Министр финансов оценил вашу инициативу."
+                    },
+                    {
+                        text: "Найти новые источники финансирования",
+                        cost: 0,
+                        effect: {corruption: 5, influence: 2},
+                        relationEffects: {"Министр финансов": -5, "Генеральный прокурор": -5},
+                        message: "Вы организовали несколько сомнительных схем финансирования, что позволило сохранить штат, но вызвало вопросы у финансовых органов."
+                    }
+                ]
+            },
+            {
+                title: "Иностранный шпионаж",
+                description: "Спецслужбы обнаружили, что иностранная разведка пытается вербовать сотрудников МУВП. Ваше подразделение в зоне особого риска из-за доступа к секретной информации.",
+                options: [
+                    {
+                        text: "Устроить показательные аресты",
+                        cost: 0,
+                        effect: {security: 5, stability: 1},
+                        relationEffects: {"Глава КГБ": 5, "Министр иностранных дел": -3},
+                        message: "Вы публично арестовали нескольких подозреваемых, укрепив репутацию бдительности. Однако МИД недоволен осложнением международных отношений."
+                    },
+                    {
+                        text: "Тайно завербовать двойных агентов (Требуется $40,000)",
+                        cost: 40000,
+                        effect: {security: 3, influence: 3},
+                        relationEffects: {"Глава КГБ": 10, "Министр иностранных дел": -5},
+                        message: "Вы создали сеть двойных агентов, что позволит контролировать утечки информации. КГБ в восторге от вашей инициативы."
+                    },
+                    {
+                        text: "Игнорировать угрозу",
+                        cost: 0,
+                        effect: {security: -5, stability: -2},
+                        relationEffects: {"Глава КГБ": -10},
+                        message: "Вы решили не привлекать внимание к проблеме, что привело к утечке важных данных. Спецслужбы в ярости от вашей халатности."
+                    }
+                ]
+            }
+        ];
+
+        // Угрозы (попытки подставить игрока)
+        const blackmails = [
+            {
+                description: "Кто-то из ваших подчиненных собирает на вас компромат по указанию свыше. Он уже передал информацию в КГБ, включая записи ваших частных разговоров. Дело может дойти до Верховного Лидера.",
+                options: [
+                    {
+                        text: "Подкупить следователя (Требуется $25,000)",
+                        cost: 25000,
+                        effect: {corruption: 3, security: 2},
+                        relationEffects: {"Глава КГБ": 5, "Генеральный прокурор": -5},
+                        message: "Дело было закрыто за недостатком доказательств, а подчиненный переведен на другую должность. КГБ получил свою долю, но прокурор недоволен."
+                    },
+                    {
+                        text: "Дискредитировать доносчика",
+                        cost: 0,
+                        effect: {influence: -2, security: -1},
+                        relationEffects: {"Глава КГБ": -3, "Первый секретарь": 3},
+                        message: "Вы нашли компромат на доносчика и добились его увольнения. Партийное руководство одобрило вашу решительность."
+                    },
+                    {
+                        text: "Устранить угрозу (рисковано)",
+                        cost: 0,
+                        effect: {security: -5, stability: -2},
+                        relationEffects: {"Глава КГБ": -10, "Министр обороны": 5},
+                        message: "Доносчик исчез при загадочных обстоятельствах, что вызвало подозрения спецслужб, но армия оценила вашу жесткость."
+                    }
+                ]
+            },
+            {
+                description: "Ваш коллега по МУВП, который давно метит на ваше место, открыто обвиняет вас в коррупции и требует вашей отставки. Он уже заручился поддержкой нескольких влиятельных фигур.",
+                options: [
+                    {
+                        text: "Подкупить коллегу (Требуется $30,000)",
+                        cost: 30000,
+                        effect: {corruption: 5, influence: 1},
+                        relationEffects: {"Первый секретарь": -3, "Министр финансов": 3},
+                        message: "Коллега внезапно изменил свое мнение и отозвал обвинения после получения крупной суммы. Партийное руководство заподозрило сделку."
+                    },
+                    {
+                        text: "Найти компромат на коллегу",
+                        cost: 0,
+                        effect: {reputation: -1, influence: 2},
+                        relationEffects: {"Генеральный прокурор": 5, "Первый секретарь": -2},
+                        message: "Вы обнародовали прошлые нарушения коллеги, дискредитировав его. Прокурор доволен раскрытием дела."
+                    },
+                    {
+                        text: "Обратиться за поддержкой к партии",
+                        cost: 0,
+                        effect: {party: -3, influence: 1},
+                        relationEffects: {"Первый секретарь": 5, "Глава КГБ": -3},
+                        message: "Партийное руководство встало на вашу сторону, но потребовало взамен политические услуги. Спецслужбы недовольны вмешательством партии."
+                    }
+                ]
+            },
+            {
+                description: "Верховный Лидер получил анонимное письмо с обвинениями в ваш адрес. Вас вызывают на объяснения в Администрацию Президента. От вашего ответа зависит ваша дальнейшая карьера.",
+                options: [
+                    {
+                        text: "Признать мелкие нарушения (Требуется $50,000)",
+                        cost: 50000,
+                        effect: {reputation: -2, stability: 1},
+                        relationEffects: {"Руководитель Администрации": 5, "Генеральный прокурор": -5},
+                        message: "Вы признали незначительные нарушения и внесли 'добровольное пожертвование' в партийную кассу. Администрация удовлетворилась, но прокурор хотел большего."
+                    },
+                    {
+                        text: "Отрицать все обвинения",
+                        cost: 0,
+                        effect: {influence: -3, stability: -1},
+                        relationEffects: {"Руководитель Администрации": -5, "Глава КГБ": 3},
+                        message: "Вы категорически отвергли все обвинения как клевету. Администрация недовольна, но спецслужбы оценили вашу твердость."
+                    },
+                    {
+                        text: "Найти настоящего виновника",
+                        cost: 0,
+                        effect: {security: 3, influence: -1},
+                        relationEffects: {"Глава КГБ": 5, "Руководитель Администрации": -3},
+                        message: "Вы перевели стрелки на своего конкурента, предоставив доказательства. Спецслужбы довольны, но администрация считает это интригами."
+                    }
+                ]
+            },
+            {
+                description: "Журналист ведущего издания готовит разоблачительную статью о вашей деятельности. У него есть доступ к секретным документам и показаниям нескольких свидетелей. Публикация может разрушить вашу карьеру.",
+                options: [
+                    {
+                        text: "Подкупить журналиста (Требуется $40,000)",
+                        cost: 40000,
+                        effect: {corruption: 5, reputation: -1},
+                        relationEffects: {"Главный редактор 'Правды'": -5, "Генеральный прокурор": -3},
+                        message: "Журналист согласился отказаться от публикации за крупную сумму. Однако главный редактор заподозрил неладное."
+                    },
+                    {
+                        text: "Дискредитировать журналиста",
+                        cost: 0,
+                        effect: {reputation: -2, influence: 1},
+                        relationEffects: {"Главный редактор 'Правды'": -10, "Глава КГБ": 3},
+                        message: "Вы опубликовали компрометирующие материалы о журналисте, но это сделало вас мишенью для других СМИ."
+                    },
+                    {
+                        text: "Обратиться к спецслужбам",
+                        cost: 0,
+                        effect: {security: 5, stability: -1},
+                        relationEffects: {"Глава КГБ": 5, "Главный редактор 'Правды'": -10},
+                        message: "КГБ арестовал журналиста за разглашение гостайны. СМИ в ужасе от такой цензуры."
+                    }
+                ]
+            }
+        ];
+
+        // DOM элементы
+        const startScreen = document.getElementById('start-screen');
+        const gameContainer = document.getElementById('game-container');
+        const endScreen = document.getElementById('end-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const caseNumber = document.getElementById('case-number');
+        const caseDescription = document.getElementById('case-description');
+        const caseSeverity = document.getElementById('case-severity');
+        const caseConsequences = document.getElementById('case-consequences');
+        const decisionButtons = document.getElementById('decision-buttons');
+        const log = document.getElementById('log');
+        const gameDate = document.getElementById('game-date');
+        const reputationEl = document.getElementById('reputation');
+        const corruptionEl = document.getElementById('corruption');
+        const influenceEl = document.getElementById('influence');
+        const stabilityEl = document.getElementById('stability');
+        const armyValue = document.getElementById('army-value');
+        const securityValue = document.getElementById('security-value');
+        const partyValue = document.getElementById('party-value');
+        const armyBar = document.getElementById('army-bar');
+        const securityBar = document.getElementById('security-bar');
+        const partyBar = document.getElementById('party-bar');
+        const rankEl = document.getElementById('rank');
+        const endMessage = document.getElementById('end-message');
+        const moneyAmount = document.getElementById('money-amount');
+        const relationsList = document.getElementById('relations-list');
+        const eventPopup = document.getElementById('event-popup');
+        const eventTitle = document.getElementById('event-title');
+        const eventDescription = document.getElementById('event-description');
+        const eventOptions = document.getElementById('event-options');
+        const blackmailPopup = document.getElementById('blackmail-popup');
+        const blackmailDescription = document.getElementById('blackmail-description');
+        const blackmailOptions = document.getElementById('blackmail-options');
+
+        // Текущее дело
+        let currentCase = {};
+
+        // Функции игры
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            gameState = {
+                reputation: 50,
+                corruption: 50,
+                influence: 50,
+                stability: 50,
+                army: 50,
+                security: 50,
+                party: 50,
+                money: 50000,
+                day: 1,
+                year: 1984,
+                casesSolved: 0,
+                rank: 3,
+                rankName: "Старший Инспектор 3-го Класса",
+                logEntries: ["Добро пожаловать в Министерство Урегулирования Внутренних Противоречий."],
+                gameOver: false,
+                relations: {
+                    "Министр обороны": 50,
+                    "Глава КГБ": 50,
+                    "Первый секретарь": 50,
+                    "Генеральный прокурор": 50,
+                    "Председатель Верховного Совета": 50,
+                    "Главный редактор 'Правды'": 50,
+                    "Начальник Генштаба": 50,
+                    "Министр иностранных дел": 50,
+                    "Министр финансов": 50,
+                    "Руководитель Администрации": 50
+                },
+                blackmailChance: 0,
+                eventChance: 0.2
+            };
+            updateUI();
+            generateCase();
+        }
+
+        function restartGame() {
+            endScreen.classList.add('hidden');
+            startGame();
+        }
+
+        function generateCase() {
+            const position = positions[Math.floor(Math.random() * positions.length)];
+            const crimeData = crimes[Math.floor(Math.random() * crimes.length)];
+            const crime = crimeData.description;
+            const severity = crimeData.severity;
+            const consequences = crimeData.consequences;
+            const context = contexts[Math.floor(Math.random() * contexts.length)];
+            const hasConnection = Math.random() > 0.7;
+            const connection = hasConnection ? connections[Math.floor(Math.random() * connections.length)] : null;
+            
+            currentCase = {
+                position,
+                crime,
+                severity,
+                consequences,
+                context,
+                connection
+            };
+
+            caseNumber.textContent = gameState.casesSolved + 1;
+            
+            let severityText = "";
+            if (severity <= 3) severityText = "(Незначительное нарушение)";
+            else if (severity <= 6) severityText = "(Серьезное нарушение)";
+            else if (severity <= 8) severityText = "(Грубое нарушение)";
+            else severityText = "(Особо тяжкое нарушение)";
+            
+            caseSeverity.textContent = severityText;
+            
+            let connectionText = "";
+            if (connection) {
+                connectionText = `<br><br><strong>Связи:</strong> Нарушитель - ${connection.text}.`;
+            }
+            
+            caseDescription.innerHTML = `
+                <strong>Должность:</strong> ${position}<br><br>
+                <strong>Нарушение:</strong> ${crime}<br><br>
+                <strong>Контекст:</strong> ${context}${connectionText}
+            `;
+            
+            caseConsequences.innerHTML = `<strong>Последствия:</strong> ${consequences}`;
+            caseConsequences.classList.remove('hidden');
+
+            // Очищаем предыдущие кнопки решений
+            decisionButtons.innerHTML = '';
+
+            // Добавляем кнопки решений
+            decisions.forEach((decision, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'decision-btn';
+                
+                // Для решений с динамической стоимостью
+                let cost = typeof decision.money === 'function' ? decision.money(severity) : decision.money;
+                let text = decision.text;
+                if (cost > 0) {
+                    text += ` ($${cost})`;
+                }
+                btn.textContent = text;
+                
+                // Проверяем, хватает ли денег для взятки
+                if (cost > 0 && gameState.money < cost) {
+                    btn.disabled = true;
+                    btn.title = `Недостаточно денег. Требуется: $${cost}`;
+                }
+                
+                btn.onclick = () => makeDecision(index);
+                decisionButtons.appendChild(btn);
+            });
+        }
+
+        function makeDecision(decisionIndex) {
+            const decision = decisions[decisionIndex];
+            
+            // Для решений с динамической стоимостью
+            const moneyChange = typeof decision.money === 'function' ? 
+                decision.money(currentCase.severity) : decision.money;
+            
+            // Применяем эффекты решения
+            gameState.reputation += decision.reputation;
+            gameState.corruption += decision.corruption;
+            gameState.influence += decision.influence;
+            gameState.stability += decision.stability;
+            gameState.army += decision.army;
+            gameState.security += decision.security;
+            gameState.party += decision.party;
+            gameState.money += moneyChange;
+            
+            // Применяем изменения в отношениях из решения
+            for (const person in decision.relations) {
+                if (gameState.relations[person] !== undefined) {
+                    gameState.relations[person] += decision.relations[person];
+                    gameState.relations[person] = Math.max(0, Math.min(100, gameState.relations[person]));
+                }
+            }
+            
+            // Применяем дополнительные эффекты отношений в зависимости от связей
+            if (currentCase.connection && typeof decision.relationEffects === 'function') {
+                const relationEffects = decision.relationEffects(currentCase.connection);
+                for (const person in relationEffects) {
+                    if (gameState.relations[person] !== undefined) {
+                        gameState.relations[person] += relationEffects[person];
+                        gameState.relations[person] = Math.max(0, Math.min(100, gameState.relations[person]));
+                    }
+                }
+            }
+            
+            // Увеличиваем шанс угрозы при коррупционных решениях
+            if (decision.corruption > 0) {
+                gameState.blackmailChance += decision.corruption * 0.05;
+            }
+            
+            // Добавляем запись в лог
+            addLogEntry(decision.message);
+            
+            // Увеличиваем счетчик дел
+            gameState.casesSolved++;
+            
+            // Проверяем повышение ранга
+            checkRank();
+            
+            // Переходим к следующему дню
+            nextDay();
+            
+            // Проверяем условия окончания игры
+            checkGameOver();
+            
+            // Обновляем интерфейс
+            updateUI();
+            
+            // Проверяем случайные события
+            if (!gameState.gameOver) {
+                checkRandomEvents();
+            }
+        }
+
+        function nextDay() {
+            gameState.day++;
+            if (gameState.day > 365) {
+                gameState.day = 1;
+                gameState.year++;
+                
+                // Годовые события
+                const annualEvent = Math.random();
+                if (annualEvent < 0.3) {
+                    addLogEntry(`<strong>${gameState.year} год:</strong> Проведена чистка госаппарата. Ваше влияние возросло.`);
+                    gameState.influence += 5;
+                } else if (annualEvent < 0.6) {
+                    addLogEntry(`<strong>${gameState.year} год:</strong> Экономический кризис. Уровень коррупции вырос.`);
+                    gameState.corruption += 10;
+                } else {
+                    addLogEntry(`<strong>${gameState.year} год:</strong> Стабильная ситуация в стране.`);
+                }
+                
+                // Увеличиваем шанс событий с каждым годом
+                gameState.eventChance = Math.min(0.5, gameState.eventChance + 0.05);
+            }
+        }
+
+        function checkRandomEvents() {
+            // Проверяем обычные события
+            if (Math.random() < gameState.eventChance) {
+                const event = events[Math.floor(Math.random() * events.length)];
+                showEventPopup(event);
+                gameState.eventChance = 0.1; // Сбрасываем шанс после события
+                return;
+            }
+            
+            // Проверяем угрозы (чем выше коррупция, тем больше шанс)
+            if (Math.random() < gameState.blackmailChance) {
+                const blackmail = blackmails[Math.floor(Math.random() * blackmails.length)];
+                showBlackmailPopup(blackmail);
+                gameState.blackmailChance = 0; // Сбрасываем шанс после угрозы
+                return;
+            }
+            
+            // Если ничего не произошло, генерируем новое дело
+            generateCase();
+        }
+
+        function showEventPopup(event) {
+            eventTitle.textContent = event.title;
+            eventDescription.textContent = event.description;
+            eventOptions.innerHTML = '';
+            
+            event.options.forEach((option, index) => {
+                const div = document.createElement('div');
+                div.className = 'event-option';
+                
+                // Проверяем, хватает ли денег
+                if (option.cost > 0 && gameState.money < option.cost) {
+                    div.textContent = `${option.text} (Недостаточно денег)`;
+                    div.style.color = '#888';
+                    div.style.cursor = 'not-allowed';
+                } else {
+                    div.textContent = option.cost > 0 ? `${option.text} ($${option.cost})` : option.text;
+                    div.onclick = () => {
+                        handleEventOption(option);
+                        eventPopup.classList.add('hidden');
+                        if (!gameState.gameOver) {
+                            generateCase();
+                        }
+                    };
+                }
+                
+                eventOptions.appendChild(div);
+            });
+            
+            eventPopup.classList.remove('hidden');
+        }
+
+        function handleEventOption(option) {
+            // Применяем стоимость
+            if (option.cost > 0) {
+                gameState.money -= option.cost;
+            }
+            
+            // Применяем эффекты
+            for (const stat in option.effect) {
+                gameState[stat] += option.effect[stat];
+                gameState[stat] = Math.max(0, Math.min(100, gameState[stat]));
+            }
+            
+            // Применяем эффекты отношений
+            if (option.relationEffects) {
+                for (const person in option.relationEffects) {
+                    if (gameState.relations[person] !== undefined) {
+                        gameState.relations[person] += option.relationEffects[person];
+                        gameState.relations[person] = Math.max(0, Math.min(100, gameState.relations[person]));
+                    }
+                }
+            }
+            
+            // Добавляем запись в лог
+            addLogEntry(option.message);
+            
+            // Проверяем условия окончания игры
+            checkGameOver();
+            
+            // Обновляем интерфейс
+            updateUI();
+        }
+
+        function showBlackmailPopup(blackmail) {
+            blackmailDescription.textContent = blackmail.description;
+            blackmailOptions.innerHTML = '';
+            
+            blackmail.options.forEach((option, index) => {
+                const div = document.createElement('div');
+                div.className = 'blackmail-option';
+                
+                // Проверяем, хватает ли денег
+                if (option.cost > 0 && gameState.money < option.cost) {
+                    div.textContent = `${option.text} (Недостаточно денег)`;
+                    div.style.color = '#888';
+                    div.style.cursor = 'not-allowed';
+                } else {
+                    div.textContent = option.cost > 0 ? `${option.text} ($${option.cost})` : option.text;
+                    div.onclick = () => {
+                        handleBlackmailOption(option);
+                        blackmailPopup.classList.add('hidden');
+                        if (!gameState.gameOver) {
+                            generateCase();
+                        }
+                    };
+                }
+                
+                blackmailOptions.appendChild(div);
+            });
+            
+            blackmailPopup.classList.remove('hidden');
+        }
+
+        function handleBlackmailOption(option) {
+            // Применяем стоимость
+            if (option.cost > 0) {
+                gameState.money -= option.cost;
+            }
+            
+            // Применяем эффекты
+            for (const stat in option.effect) {
+                gameState[stat] += option.effect[stat];
+                gameState[stat] = Math.max(0, Math.min(100, gameState[stat]));
+            }
+            
+            // Применяем эффекты отношений
+            if (option.relationEffects) {
+                for (const person in option.relationEffects) {
+                    if (gameState.relations[person] !== undefined) {
+                        gameState.relations[person] += option.relationEffects[person];
+                        gameState.relations[person] = Math.max(0, Math.min(100, gameState.relations[person]));
+                    }
+                }
+            }
+            
+            // Добавляем запись в лог
+            addLogEntry(option.message);
+            
+            // Проверяем условия окончания игры
+            checkGameOver();
+            
+            // Обновляем интерфейс
+            updateUI();
+        }
+
+        function checkRank() {
+            if (gameState.influence >= 80 && gameState.rank < 6) {
+                gameState.rank = 6;
+                gameState.rankName = ranks[6];
+                addLogEntry("<strong>Поздравляем!</strong> Вы назначены Министром Урегулирования Внутренних Противоречий!");
+            } else if (gameState.influence >= 70 && gameState.rank < 5) {
+                gameState.rank = 5;
+                gameState.rankName = ranks[5];
+                addLogEntry("<strong>Поздравляем!</strong> Вы повышены до Заместителя Министра УВП!");
+            } else if (gameState.influence >= 60 && gameState.rank < 4) {
+                gameState.rank = 4;
+                gameState.rankName = ranks[4];
+                addLogEntry("<strong>Поздравляем!</strong> Вы повышены до Ведущего Арбитра 1-го Класса!");
+            } else if (gameState.influence >= 50 && gameState.rank < 3) {
+                gameState.rank = 3;
+                gameState.rankName = ranks[3];
+                addLogEntry("<strong>Поздравляем!</strong> Вы повышены до Главного Инспектора 2-го Класса!");
+            } else if (gameState.influence >= 40 && gameState.rank < 2) {
+                gameState.rank = 2;
+                gameState.rankName = ranks[2];
+                addLogEntry("<strong>Поздравляем!</strong> Вы повышены до Старшего Инспектора 3-го Класса!");
+            } else if (gameState.influence >= 30 && gameState.rank < 1) {
+                gameState.rank = 1;
+                gameState.rankName = ranks[1];
+                addLogEntry("<strong>Поздравляем!</strong> Вы повышены до Инспектора 4-го Класса!");
+            }
+        }
+
+        function checkGameOver() {
+            let gameOver = false;
+            let message = "";
+            
+            // Проверяем различные условия окончания игры
+            if (gameState.reputation <= 0) {
+                gameOver = true;
+                message = "Репутация Министерства упала до критического уровня. Вы уволены с позором.";
+            } else if (gameState.reputation >= 100) {
+                gameOver = true;
+                message = "Репутация Министерства достигла небывалых высот. Вы получаете личную благодарность Верховного Лидера и назначаетесь его советником!";
+            } else if (gameState.corruption <= 0) {
+                gameOver = true;
+                message = "Вы искоренили коррупцию в системе. Без взяток и связей система рухнула. Вас обвиняют в саботаже и расстреливают.";
+            } else if (gameState.corruption >= 100) {
+                gameOver = true;
+                message = "Коррупция достигла невероятных масштабов. Вас арестовывают как главного коррупционера. Суд длился 10 минут.";
+            } else if (gameState.stability <= 0) {
+                gameOver = true;
+                message = "Ваши решения привели к полной дестабилизации режима. Начались массовые волнения. Вас объявляют виновником и линчуют толпы.";
+            } else if (gameState.stability >= 100) {
+                gameOver = true;
+                message = "Режим достиг небывалой стабильности. Ваши методы признаны слишком жесткими даже для Верховного Лидера. Вас отправляют в отставку с почетом.";
+            } else if (gameState.army <= 0 || gameState.security <= 0 || gameState.party <= 0) {
+                gameOver = true;
+                const factions = [];
+                if (gameState.army <= 0) factions.push("Армия");
+                if (gameState.security <= 0) factions.push("Спецслужбы");
+                if (gameState.party <= 0) factions.push("Партия");
+                message = `Вы настроили против себя ${factions.join(" и ")}. Организован заговор, вас устраняют.`;
+            } else if (gameState.year >= 1991) {
+                gameOver = true;
+                message = "Произошла смена режима. Все архивы МУВП уничтожены. Ваша судьба неизвестна.";
+            } else if (gameState.influence <= 0) {
+                gameOver = true;
+                message = "Ваше влияние полностью иссякло. Вас переводят на должность архивариуса в дальнем регионе.";
+            } else if (gameState.money <= -100000) {
+                gameOver = true;
+                message = "Ваши долги стали слишком велики. Кредиторы нанимают киллеров. Ваше тело находят в реке.";
+            } else if (gameState.money >= 1000000) {
+                gameOver = true;
+                message = "Вы накопили достаточно богатства, чтобы сбежать на Запад. Под чужим именем вы начинаете новую жизнь в роскоши.";
+            }
+            
+            // Проверяем отношения с ключевыми фигурами
+            if (!gameOver) {
+                if (gameState.relations["Глава КГБ"] <= 0 && Math.random() > 0.7) {
+                    gameOver = true;
+                    message = "Глава КГБ решил, что вы представляете угрозу системе. Вас арестовывают по обвинению в государственной измене.";
+                } else if (gameState.relations["Министр обороны"] <= 0 && Math.random() > 0.7) {
+                    gameOver = true;
+                    message = "Министр обороны отдал приказ о вашем задержании. Военные штурмуют ваш кабинет.";
+                } else if (gameState.relations["Первый секретарь"] <= 0 && Math.random() > 0.7) {
+                    gameOver = true;
+                    message = "Партийное руководство объявляет вас врагом народа. Ваше имя стирают из всех документов.";
+                } else if (gameState.relations["Генеральный прокурор"] <= 0 && Math.random() > 0.7) {
+                    gameOver = true;
+                    message = "Генеральный прокурор инициировал против вас уголовное дело. Суд проходит в рекордные сроки.";
+                } else if (gameState.relations["Председатель Верховного Совета"] <= 0 && Math.random() > 0.7) {
+                    gameOver = true;
+                    message = "Верховный Совет лишил вас всех полномочий. Вас выводят из кабинета под конвоем.";
+                }
+            }
+            
+            if (gameOver) {
+                gameState.gameOver = true;
+                gameContainer.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+                
+                let relationsSummary = "";
+                let worstRelation = {name: "", value: 100};
+                let bestRelation = {name: "", value: 0};
+                
+                for (const person in gameState.relations) {
+                    if (gameState.relations[person] < worstRelation.value) {
+                        worstRelation = {name: person, value: gameState.relations[person]};
+                    }
+                    if (gameState.relations[person] > bestRelation.value) {
+                        bestRelation = {name: person, value: gameState.relations[person]};
+                    }
+                }
+                
+                if (worstRelation.value < 30) {
+                    relationsSummary += `<br>Худшие отношения у вас были с ${worstRelation.name} (${worstRelation.value}%).`;
+                }
+                if (bestRelation.value > 70) {
+                    relationsSummary += `<br>Лучшие отношения у вас были с ${bestRelation.name} (${bestRelation.value}%).`;
+                }
+                
+                endMessage.innerHTML = `${message}<br><br>За время службы вы рассмотрели ${gameState.casesSolved} дел.<br>Ваш окончательный ранг: ${gameState.rankName}.<br>Ваш капитал: $${gameState.money}.${relationsSummary}`;
+            }
+        }
+
+        function addLogEntry(text) {
+            const dateStr = `${gameState.day.toString().padStart(2, '0')}.${gameState.year}`;
+            gameState.logEntries.push(`[${dateStr}] ${text}`);
+            
+            // Обновляем лог
+            log.innerHTML = gameState.logEntries.map(entry => `<p>${entry}</p>`).join('');
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateUI() {
+            // Обновляем дату
+            gameDate.textContent = `${gameState.day.toString().padStart(2, '0')}.${gameState.year}`;
+            
+            // Обновляем статистику
+            reputationEl.textContent = Math.max(0, Math.min(100, gameState.reputation));
+            corruptionEl.textContent = Math.max(0, Math.min(100, gameState.corruption));
+            influenceEl.textContent = Math.max(0, Math.min(100, gameState.influence));
+            stabilityEl.textContent = Math.max(0, Math.min(100, gameState.stability));
+            
+            // Обновляем фракции
+            armyValue.textContent = Math.max(0, Math.min(100, gameState.army));
+            securityValue.textContent = Math.max(0, Math.min(100, gameState.security));
+            partyValue.textContent = Math.max(0, Math.min(100, gameState.party));
+            
+            armyBar.style.width = `${gameState.army}%`;
+            securityBar.style.width = `${gameState.security}%`;
+            partyBar.style.width = `${gameState.party}%`;
+            
+            // Обновляем ранг
+            rankEl.textContent = gameState.rankName;
+            
+            // Обновляем деньги
+            moneyAmount.textContent = gameState.money;
+            
+            // Обновляем отношения
+            relationsList.innerHTML = '';
+            for (const person in gameState.relations) {
+                const value = gameState.relations[person];
+                const div = document.createElement('div');
+                div.className = 'relation';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'relation-name';
+                nameSpan.textContent = person;
+                
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'relation-value';
+                valueSpan.textContent = value;
+                
+                const barDiv = document.createElement('div');
+                barDiv.className = 'relation-bar';
+                
+                const fillDiv = document.createElement('div');
+                fillDiv.className = 'relation-fill';
+                fillDiv.style.width = `${value}%`;
+                
+                barDiv.appendChild(fillDiv);
+                div.appendChild(nameSpan);
+                div.appendChild(valueSpan);
+                div.appendChild(barDiv);
+                relationsList.appendChild(div);
+            }
+            
+            // Цвета для статистики
+            updateStatColor('reputation', gameState.reputation);
+            updateStatColor('corruption', gameState.corruption);
+            updateStatColor('influence', gameState.influence);
+            updateStatColor('stability', gameState.stability);
+            updateStatColor('army-value', gameState.army);
+            updateStatColor('security-value', gameState.security);
+            updateStatColor('party-value', gameState.party);
+            
+            // Цвета для денег
+            if (gameState.money < 0) {
+                moneyAmount.style.color = '#FF0000';
+            } else if (gameState.money < 50000) {
+                moneyAmount.style.color = '#FF4500';
+            } else if (gameState.money < 200000) {
+                moneyAmount.style.color = '#ccc';
+            } else if (gameState.money < 500000) {
+                moneyAmount.style.color = '#32CD32';
+            } else {
+                moneyAmount.style.color = '#00FF00';
+            }
+        }
+
+        function updateStatColor(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value < 20) {
+                element.style.color = '#FF0000';
+            } else if (value < 40) {
+                element.style.color = '#FF4500';
+            } else if (value < 60) {
+                element.style.color = '#ccc';
+            } else if (value < 80) {
+                element.style.color = '#32CD32';
+            } else {
+                element.style.color = '#00FF00';
+            }
+        }
+
+        // Обработчики событий
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
